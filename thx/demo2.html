@@ -1,121 +1,144 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
-    <script type="text/javascript" src="d3js/d3.v3.js"></script>
+<meta charset="utf-8" />
+<script type="text/javascript" src="d3js/d3.v3.js"></script>
+<title>如何通过id来画力导图</title>>
 <style type="text/css">
 </style>
 </head>
 <body>
 <script type="text/javascript">
-var nodes = [ { name: "GuiLin"}, 
-					  { name: "GuangZhou" },
-					  { name: "XiaMen"    },
-					  { name: "HangZhou"   },
-					  { name: "ShangHai"   },
-					  { name: "QingDao"    },
-					  { name: "TianJin"    },
-					  { name: "BeiJing"    },
-					  { name: "ChangChun"  },
-					  { name: "XiAn"       },
-					  { name: "WuluMuQi"  },
-					  { name: "LaSa"       },
-					  { name: "ChengDu"    } ];
+		var nodes = 	[ {id:"id0", name: "GuiLin"}, 
+					  {id:"id1", name: "Beijing" },
+					  {id:"id2", name: "ChengDu"    } ];
 					 
-		var edges = [  { source : 0  , target: 1 } ,
-					   { source : 0  , target: 2 } ,
-					   { source : 0  , target: 3 } ,
-					   { source : 0  , target: 4 } ,
-					   { source : 0  , target: 5 } ,
-					   { source : 0  , target: 6 } ,
-					   { source : 0  , target: 7 } ,
-					   { source : 0  , target: 8 } ,
-					   { source : 0  , target: 9 } ,
-					   { source : 0  , target: 10 } ,
-					   { source : 0 , target: 11 } ,
-					   { source : 0 , target: 12 }];	
+		var edges = [  { source : "id0" , target: "id1" } ,
+					   { source : "id0"  , target: "id2" }];	
+       var childNodes = [ {id:"id3", name: "Haidian"}, 
+					  {id:"id4", name: "Shunyi" },
+					  { id:"id5",name: "Fengtai"},
+					  {id:"id6", name: "Xierqi"}]
+		var allNodes=[];
+		var	allEdges=[];		 
+		var childEdges = [ { source : "id1"  , target: "id3"} ,
+					   { source : "id1"  , target: "id4"} ,
+					   { source : "id1" , target: "id5"} ,
+					   { source : "id1"  , target: "id6"}];	
 		
 		var width =1000;
 		var height = 600;
 		
-		console.log(edges);
 		
 		var svg = d3.select("body").append("svg")
-								.attr("width",width)
-								.attr("height",height);
-		
+									.attr("width",width)
+									.attr("height",height);
+		var edges_line=svg.selectAll("line");
+		var nodeEnter=svg.selectAll("circle.node");
+		var svg_texts = svg.selectAll("text");
 		var force = d3.layout.force()
-							.nodes(nodes)
-							.links(edges)
+							.nodes(allNodes)
+							.links(allEdges)
 							.size([width,height])
 							.linkDistance(200)
-							.charge([-100])
-							.start();
-		var color = d3.scale.category20();					
-		var svg_edges = svg.selectAll("path.line")
-							.data(edges)
-							.enter()
-							.append("path")
-							.style("stroke",function(d,i){
-								return color(i+1);
-							})
-							.attr("class","line")
-							.attr("id",function(d,i){return "line"+i})
+							.charge([-1000]);
+		var color = d3.scale.category20();										
+		var isDevelop = true;
 
-							.style("stroke-width",1);
-		
-		var svg_mark=svg.selectAll("circle.mark")
-				.data(edges)
-				.enter()
-				.append("circle")
-				.attr("r",12)
-				.attr("class","mark")
-					
-				.style("fill",function(d,i){
-					return color(i+1);
-				})
-		//var mark_path=svg_mark.append("animateMotion").attr("dur","3s").attr("begin","0s").attr("repeatCount","indefinite");
-                 var mpath=svg_mark.append("animateMotion").attr("path",function(d){
-
-					return "M0,0L"+(d.target.x-d.source.x)+","+ (d.target.y-d.source.y);
-					// return "M"+d.source.x+","+ d.source.y+"L"+d.target.x+","+ d.target.y;
-				 }).attr("dur","3s").attr("begin","0s").attr("repeatCount","indefinite");//.append("mpath").attr("xlink:href",function(d,i){return "#line"+i});
-		var svg_nodes = svg.selectAll("circle.node")
-							.data(nodes)
-							.enter()
-							.append("circle")
-							.attr("r",10)
-							.attr("class","node")
-							.style("fill",function(d,i){
+        var findNode = function (id){
+				        	 var nodes = allNodes;
+						     for (var i in nodes){
+						         if (nodes[i]['id']==id ) return nodes[i];
+						     }
+				    		 return null;
+				        }
+       var findNodeIndex = function(id){
+				    			var node = this.nodes;
+							  	  for (var i in nodes){
+							        if (nodes[i]['id']==id ) return i;
+							   	 }
+						    	return -1;
+							}
+		var addLink = function(source,target){
+    						allEdges.push({source:findNode(source),target:findNode(target)});
+					  }	
+		var addNode = function(node){
+   					 		allNodes.push(node);
+					 }			  
+		var addLinks = function(links){					    
+					        links.forEach(function(link){
+	                         addLink(link['source'],link['target']);
+					        });
+					  }	
+		var addNodes = function(nodes){						  
+					        nodes.forEach(function(node){
+					            addNode(node);
+					        });
+						}			  		  						
+		function forceUpdate(){
+				force.nodes(allNodes).links(allEdges);
+				edges_line = edges_line
+							.data(allEdges);
+				edges_line.enter()
+							.append("line")
+							.style("stroke", "#004F89")
+							.style("stroke-width", 2)
+							.attr("id",function(d,i){return "line"+i});
+				edges_line.exit().remove();
+				var svg_nodes = svg.selectAll("circle.node")
+							.data(allNodes);
+				nodeEnter=svg_nodes.enter()
+							  .append("circle")
+							  .attr("r",10)
+							  .attr("class","node")
+							  .style("fill",function(d,i){
 								return color(i);
-							})
-							.call(force.drag);
+							  })
+							 .call(force.drag)
+							 .on("click",function(d,i){
 							
-		force.on("tick", function(){
-			/*svg_mark.attr("cx",function(d){ return d.source.x; });
-			svg_mark.attr("cy",function(d){ return d.source.y; });
-			*/
-
-			svg_mark.attr("transform", function(d) {
-			return "translate(" + d.source.x+ "," +d.source.y+ ")";
-			});
-			mpath.attr("path",function(d){
-
-				return "M0,0L"+(d.target.x-d.source.x)+","+ (d.target.y-d.source.y);
-			})
-			/*mark_path.attr("path",function(d){
-				return "M "+d.source.x+" "+ d.source.y+" "+"L "+d.target.x+" "+d.target.y
-			})*/	
-				svg_edges.attr("d",function(d){
-				return "M "+d.source.x+" "+ d.source.y+" "+"L "+d.target.x+" "+d.target.y
-			})	
-			/*svg_edges.attr("x1",function(d){ return d.source.x; });
-			 svg_edges.attr("y1",function(d){ return d.source.y; });
-			 svg_edges.attr("x2",function(d){ return d.target.x; });
-			 svg_edges.attr("y2",function(d){ return d.target.y; });
-			 */
-			 svg_nodes.attr("cx",function(d){ return d.x; });
-			 svg_nodes.attr("cy",function(d){ return d.y; });
-		});
+								if(i==1&&isDevelop==true){
+									addChildNodes(childNodes,childEdges)
+									isDevelop=false;//²»ÔÙÕ¹¿ª
+								}	
+							  });
+				svg_nodes.exit().remove();
+				  svg_texts = svg.selectAll("text").data(allNodes);
+			     textEnter= svg_texts.enter()
+			     .append("text")
+			     .style("fill", "black")
+			     .attr("dx", 20)
+			     .attr("dy", 8)
+			     .text(function(d){
+			        return d.name;
+			     });
+			     svg_texts.exit().remove();
+				force.on("tick", function(){
+			
+				edges_line.attr("x1",function(d){ return d.source.x; })
+			        .attr("y1",function(d){ return d.source.y; })
+			        .attr("x2",function(d){ return d.target.x; })
+			        .attr("y2",function(d){ return d.target.y; });
+		 
+			  
+			    svg_nodes.attr("cx",function(d){ return d.x; })
+			        	 .attr("cy",function(d){ return d.y; });
+			    svg_texts.attr("x", function(d){ return d.x; })
+			       .attr("y", function(d){ return d.y; });
+					
+		});	
+			force.start();									
+		}
+		//Ìí¼Ó½Úµã
+		function addChildNodes(childNodes,childEdges){
+	         
+			addNodes(childNodes);
+	        addLinks(childEdges);
+	         
+		  forceUpdate();
+		}
+		//调用一次	
+		addChildNodes(nodes,edges);			
 </script>
 </body>
 </html>
