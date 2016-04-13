@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style type="text/css">
+    body {
+      display: block;
+      margin: 0px;
+      overflow: hidden;
+      padding: 0px;
+    }
+  .attack {
+  stroke-dasharray: 270;
+  stroke-dashoffset: 1000;
+  animation: dash 10s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: 5;
+  }
+}
+  </style>
+  <script src="js/d3.min.js" charset="utf-8"></script>
+  <script type="text/javascript" src="js/jquery.min.js"></script>
+  <script type="text/javascript" src="js/underscore-min.js"></script>
+</head>
+<body onload="init()" style="background-color:black;">
+  <div id="container"></div>
+  <svg>
+    <radialGradient id="tip">
+      <stop offset="0" stop-color="white"/>
+      <stop offset="0.2" stop-color="pink"/>
+      <stop offset="1" stop-color="white"/>
+    </radialGradient>
+  </svg>
+  <script type="text/javascript">
+    var circleConfig={
+                    "r":0.1,
+                    "fill":"#669933",
+                    "stroke":"#669933",
+                    "stroke-width":0,
+                    "opacity":1
+                    };
+    var colors = ["#CCCC","#CCFFFF","#FFCCCC","#CCFF99","#FFCC99"];                
+    var apertureConfig={};                    
+    var height = 800;
+    var width = 1800;
+    var svg = d3.select('#container').append('svg').attr("height",height).attr("width",width);
+    var pertureData=[1,2,3]
+function draw(){
+    d3.json("world-countries.json", function(data) {
+      /* Antarctica will not shown on the map */
+      var features = _.filter(data.features, function(value, key) {
+			        return value.properties.name != 'Antarctica';
+			      });
+
+      var projection = d3.geo.mercator();
+      var oldScala = projection.scale();
+      var oldTranslate = projection.translate();
+
+      xy =  projection.scale(180)
+        .translate([width / 2, height / 2]);
+      
+      path = d3.geo.path().projection(xy);
+
+      svg.attr('width', width).attr('height', height);
+      svg.selectAll('path').data(features).enter().append('svg:path')
+        .attr('d', path)
+        .attr("id",function(d){
+        	return d.id;
+        })
+        .attr('fill','#47b3ff')
+        .attr('fill-opacity',0.12)
+        .attr('stroke', '#32bdbd')
+        .attr('stroke-width', 1);
+        		//机场打点
+		       d3.json("airport.json", function(data) {
+		       	 var circleData=[];
+		          
+		       	var airport =  _.filter(data.airports, function(value, key) {
+					        return value.active == true;
+					      });
+		       	for (var i = 0; i < airport.length; i++) {
+		       		     var myLocation = xy([airport[i].longitude,airport[i].latitude]);
+
+		       		 	circleData.push({"x":myLocation[0],"y":myLocation[1]});
+		       	};
+		       //机场圆点
+		        var airportCircle =svg.selectAll("circle")
+		                    .data(circleData)
+		                    .enter()
+		                    .append("circle")
+		                    .attr("r",circleConfig.r)
+		                    .style({"fill":"#FFFFCC",
+		                            "stroke":"#669933",
+		                            "stroke-width":1,
+		                            "opacity":1})  
+		                    .attr("transform",function(d){return "translate("+ d.x+","+ d.y+")"}); 
+		           //航线数据
+		           d3.json("airlines.json", function(data) {
+		           		 var airlineData=[];
+		           		 	for (var i = 0; i < data.length; i++) {
+				       		     var from= xy([data[i].fromLon,data[i].fromLat]);
+				       		     var to = xy([data[i].toLon,data[i].toLat]);
+				       		 	airlineData.push({"fromx":from[0],"fromy":from[1],"tox":to[0],"toy":to[1]});
+		      		 		};
+		           	   svg.selectAll("path.airline").data(airlineData).enter().append("path")
+				          .attr("class","airline")
+				          .attr("fill","none")
+				          .attr("stroke",function(d,i){
+
+				          	/*return colors[i%colors.length]*/
+				          	return "rgb(179,214,110)"
+				          })
+				          .attr("stroke-width",0.2)
+
+				          /*.attr("stroke-dasharray",[1000,10])
+				          .attr("stroke-linejoin",0)*/
+				          .attr("d",function(d){
+
+				                return  "M" +d.fromx+" "+ d.fromy+" "+"Q"+(d.fromx+d.tox)/2+" "+(d.toy-100)+","+d.tox+" "+d.toy;
+				          });
+		           	 svg.attr("transform","translate(0,200)"); 
+		           
+		           })
+
+		      
+		   
+		       })
+    
+
+   
+    }); 
+}
+
+
+   //最后加载
+   function init(){
+        draw();
+       
+    }
+  </script>
+</body>
+</html>
